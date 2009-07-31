@@ -1,0 +1,401 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html xmlns:yui="http://yuilibrary.com/rdf/1.0/yui.rdf#">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+	<title>API: elementrotator   elementrotator.js  (YUI Library)</title>
+
+	<link rel="stylesheet" type="text/css" href="assets/reset-fonts-grids-min.css?stamp=1249079073.41" />
+	<link rel="stylesheet" type="text/css" href="assets/api.css?stamp=1249079073.41" />
+
+    <script type="text/javascript" src="assets/api-js?stamp=1249079073.41"></script>
+    <script type="text/javascript" src="assets/ac-js?stamp=1249079073.41"></script>
+</head>
+
+<body id="yahoo-com">
+
+<div id="doc3" class="yui-t2">
+	<div id="hd">
+        <h1><a href="http://blargon.net/" title="blargon">blargon</a></h1>
+        <h3>elementrotator&nbsp; <span class="subtitle">0.1</span></h3>
+        <a href="./index.html" title="blargon">blargon</a> 
+            &gt; <a href="./module_elementrotator.html" title="elementrotator">elementrotator</a>
+                
+                 &gt; elementrotator.js (source view) 
+        <form onsubmit="return false">
+            <div id="propertysearch">
+                Search: <input autocomplete="off" id="searchinput" />
+                <div id="searchresults">
+                    &nbsp;
+                </div>
+            </div>
+        </form>
+	</div>
+
+	<div id="bd">
+		<div id="yui-main">
+			<div class="yui-b">
+            <form action="#" name="yui-classopts-form" method="get" id="yui-classopts-form">
+                <fieldset>
+                    <legend>Filters</legend>
+                <span class="classopts"><input type="checkbox" name="show_private" id="show_private" /> <label for="show_private">Show Private</label></span>
+                <span class="classopts"><input type="checkbox" name="show_protected" id="show_protected" /> <label for="show_protected">Show Protected</label></span>
+                <span class="classopts"><input type="checkbox" name="show_deprecated" id="show_deprecated" /> <label for="show_deprecated">Show Deprecated</label></span>
+                </fieldset>
+            </form>
+
+                    <div id="srcout">
+                        <style>
+                            #doc3 .classopts { display:none; }
+                        </style>
+<div class="highlight"><pre><span class="c">/**</span>
+<span class="c">* The ElementRotator widget provides a simple mechanism for cycling</span>
+<span class="c">* through a set of elements with fade transitions. It is intended for</span>
+<span class="c">* elements of the same size, e.g. banner images.</span>
+<span class="c">*</span>
+<span class="c">* The widget will optionally sync transitions with the visitor&#39;s clock</span>
+<span class="c">* and/or persistently keep track of the currently shown element, so that</span>
+<span class="c">* the transitions are uniform even if the visitor reloads the page or</span>
+<span class="c">* navigates to another page with the same widget.</span>
+<span class="c">*</span>
+<span class="c">* @module elementrotator</span>
+<span class="c">* @requires yahoo, dom, event, element, cookie, animation</span>
+<span class="c">*/</span>
+<span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+	
+	<span class="c">// Shortcuts</span>
+	<span class="kd">var</span> <span class="nx">Lang</span> <span class="o">=</span> <span class="nx">YAHOO</span><span class="p">.</span><span class="nx">lang</span><span class="o">,</span>
+		<span class="nx">Dom</span> <span class="o">=</span> <span class="nx">YAHOO</span><span class="p">.</span><span class="nx">util</span><span class="p">.</span><span class="nx">Dom</span><span class="o">,</span>
+		<span class="nx">Element</span> <span class="o">=</span> <span class="nx">YAHOO</span><span class="p">.</span><span class="nx">util</span><span class="p">.</span><span class="nx">Element</span><span class="o">,</span>
+		<span class="nx">Cookie</span> <span class="o">=</span> <span class="nx">YAHOO</span><span class="p">.</span><span class="nx">util</span><span class="p">.</span><span class="nx">Cookie</span><span class="o">,</span>
+		<span class="nx">Anim</span> <span class="o">=</span> <span class="nx">YAHOO</span><span class="p">.</span><span class="nx">util</span><span class="p">.</span><span class="nx">Anim</span><span class="o">;</span>
+	
+	<span class="c">/**</span>
+<span class="c">	* The ElementRotator class</span>
+<span class="c">	*</span>
+<span class="c">	* @namespace YAHOO.BLARGON.widget</span>
+<span class="c">	* @class ElementRotator</span>
+<span class="c">	* @extends YAHOO.util.Element</span>
+<span class="c">	* @constructor</span>
+<span class="c">	* @param {String | HTMLElement} ctr Container element</span>
+<span class="c">	* @param {Object} cfg Configuration object</span>
+<span class="c">	*/</span>
+	<span class="kd">function</span> <span class="nx">ElementRotator</span><span class="p">(</span><span class="nx">ctr</span><span class="o">,</span> <span class="nx">cfg</span><span class="p">)</span> <span class="p">{</span>
+		<span class="nx">cfg</span> <span class="o">=</span> <span class="nx">cfg</span> <span class="o">||</span> <span class="p">{};</span>
+		<span class="c">// Call parent</span>
+		<span class="nx">ElementRotator</span><span class="p">.</span><span class="nx">superclass</span><span class="p">.</span><span class="nx">constructor</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="o">,</span> <span class="nx">ctr</span><span class="o">,</span> <span class="nx">cfg</span><span class="p">);</span>
+		
+		<span class="c">/**</span>
+<span class="c">		* Array of HTML elements</span>
+<span class="c">		* @property _elements</span>
+<span class="c">		* @private</span>
+<span class="c">		* @type Array</span>
+<span class="c">		*/</span>
+		<span class="k">this</span><span class="p">.</span><span class="nx">_elements</span> <span class="o">=</span> <span class="p">[];</span>
+		
+		<span class="c">/**</span>
+<span class="c">		* Current element index</span>
+<span class="c">		* @property _current</span>
+<span class="c">		* @private</span>
+<span class="c">		* @type Number</span>
+<span class="c">		*/</span>
+		<span class="k">this</span><span class="p">.</span><span class="nx">_current</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+	<span class="p">}</span>
+	
+	<span class="c">/**</span>
+<span class="c">	* Default configuration settings</span>
+<span class="c">	* @property _CONFIG_DEFAULTS</span>
+<span class="c">	* @private</span>
+<span class="c">	* @static</span>
+<span class="c">	* @final</span>
+<span class="c">	* @type Object</span>
+<span class="c">	*/</span>
+	<span class="nx">ElementRotator</span><span class="p">.</span><span class="nx">_CONFIG_DEFAULTS</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="nx">SHOW_DURATION</span><span class="o">:</span> <span class="p">{</span> <span class="nx">key</span><span class="o">:</span> <span class="s1">&#39;show_duration&#39;</span><span class="o">,</span> <span class="nx">value</span><span class="o">:</span> <span class="mi">5</span> <span class="p">}</span><span class="o">,</span>
+		<span class="nx">FADE_DURATION</span><span class="o">:</span> <span class="p">{</span> <span class="nx">key</span><span class="o">:</span> <span class="s1">&#39;fade_duration&#39;</span><span class="o">,</span> <span class="nx">value</span><span class="o">:</span> <span class="mi">1</span> <span class="p">}</span><span class="o">,</span>
+		<span class="nx">CLOCK_SYNC</span><span class="o">:</span> <span class="p">{</span> <span class="nx">key</span><span class="o">:</span> <span class="s1">&#39;clock_sync&#39;</span><span class="o">,</span> <span class="nx">value</span><span class="o">:</span> <span class="kc">false</span> <span class="p">}</span><span class="o">,</span>
+		<span class="nx">COOKIE_PERSIST</span><span class="o">:</span> <span class="p">{</span> <span class="nx">key</span><span class="o">:</span> <span class="s1">&#39;cookie_persist&#39;</span><span class="o">,</span> <span class="nx">value</span><span class="o">:</span> <span class="kc">false</span> <span class="p">}</span><span class="o">,</span>
+		<span class="nx">COOKIE_NAME</span><span class="o">:</span> <span class="p">{</span> <span class="nx">key</span><span class="o">:</span> <span class="s1">&#39;cookie_name&#39;</span><span class="o">,</span> <span class="nx">value</span><span class="o">:</span> <span class="s1">&#39;elementrotator&#39;</span> <span class="p">}</span><span class="o">,</span>
+		<span class="nx">COOKIE_SETTINGS</span><span class="o">:</span> <span class="p">{</span> <span class="nx">key</span><span class="o">:</span> <span class="s1">&#39;cookie_settings&#39;</span><span class="o">,</span> <span class="nx">value</span><span class="o">:</span> <span class="p">{</span> <span class="nx">path</span><span class="o">:</span> <span class="s1">&#39;/&#39;</span> <span class="p">}</span> <span class="p">}</span>
+	<span class="p">};</span>
+	
+	<span class="c">/**</span>
+<span class="c">	* Sub-cookie names</span>
+<span class="c">	* @property _COOKIES</span>
+<span class="c">	* @private</span>
+<span class="c">	* @static</span>
+<span class="c">	* @final</span>
+<span class="c">	* @type Object</span>
+<span class="c">	*/</span>
+	<span class="nx">ElementRotator</span><span class="p">.</span><span class="nx">_COOKIES</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="nx">CURRENT</span><span class="o">:</span> <span class="s1">&#39;current&#39;</span>
+	<span class="p">};</span>
+	
+	<span class="kd">var</span> <span class="nx">_CONFIG</span> <span class="o">=</span> <span class="nx">ElementRotator</span><span class="p">.</span><span class="nx">_CONFIG_DEFAULTS</span><span class="o">,</span>
+		<span class="nx">_COOKIES</span> <span class="o">=</span> <span class="nx">ElementRotator</span><span class="p">.</span><span class="nx">_COOKIES</span><span class="o">;</span>
+	
+	<span class="nx">Lang</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">ElementRotator</span><span class="o">,</span> <span class="nx">Element</span><span class="o">,</span>
+		<span class="p">{</span>
+			<span class="c">/**</span>
+<span class="c">			* Initializes configuration attributes</span>
+<span class="c">			* @method initAttributes</span>
+<span class="c">			* @param {Object} cfg Configuration object</span>
+<span class="c">			*/</span>
+			<span class="nx">initAttributes</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">cfg</span><span class="p">)</span> <span class="p">{</span>
+				<span class="c">// Call parent</span>
+				<span class="nx">ElementRotator</span><span class="p">.</span><span class="nx">superclass</span><span class="p">.</span><span class="nx">initAttributes</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="o">,</span> <span class="nx">cfg</span><span class="p">);</span>
+				
+				<span class="c">/**</span>
+<span class="c">				* Duration each element is shown, in seconds</span>
+<span class="c">				* @attribute show_duration</span>
+<span class="c">				* @type Number</span>
+<span class="c">				* @default 10</span>
+<span class="c">				*/</span>
+				<span class="k">this</span><span class="p">.</span><span class="nx">setAttributeConfig</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">SHOW_DURATION</span><span class="p">.</span><span class="nx">key</span><span class="o">,</span> <span class="p">{</span> <span class="nx">value</span><span class="o">:</span> <span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">SHOW_DURATION</span><span class="p">.</span><span class="nx">value</span><span class="o">,</span> <span class="nx">validator</span><span class="o">:</span> <span class="nx">Lang</span><span class="p">.</span><span class="nx">isNumber</span> <span class="p">});</span>
+				
+				<span class="c">/**</span>
+<span class="c">				* Duration of fade transition, in seconds</span>
+<span class="c">				* @attribute fade_duration</span>
+<span class="c">				* @type Number</span>
+<span class="c">				* @default 1</span>
+<span class="c">				*/</span>
+				<span class="k">this</span><span class="p">.</span><span class="nx">setAttributeConfig</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">FADE_DURATION</span><span class="p">.</span><span class="nx">key</span><span class="o">,</span> <span class="p">{</span> <span class="nx">value</span><span class="o">:</span> <span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">FADE_DURATION</span><span class="p">.</span><span class="nx">value</span><span class="o">,</span> <span class="nx">validator</span><span class="o">:</span> <span class="nx">Lang</span><span class="p">.</span><span class="nx">isNumber</span> <span class="p">});</span>
+				
+				<span class="c">/**</span>
+<span class="c">				* Synchronize transitions with user&#39;s clock.</span>
+<span class="c">				* @attribute clock_sync</span>
+<span class="c">				* @type Boolean</span>
+<span class="c">				* @default false</span>
+<span class="c">				*/</span>
+				<span class="k">this</span><span class="p">.</span><span class="nx">setAttributeConfig</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">CLOCK_SYNC</span><span class="p">.</span><span class="nx">key</span><span class="o">,</span> <span class="p">{</span> <span class="nx">value</span><span class="o">:</span> <span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">CLOCK_SYNC</span><span class="p">.</span><span class="nx">value</span><span class="o">,</span> <span class="nx">validator</span><span class="o">:</span> <span class="nx">Lang</span><span class="p">.</span><span class="nx">isBoolean</span> <span class="p">});</span>
+				
+				<span class="c">/**</span>
+<span class="c">				* Keep track of currently shown element with cookie</span>
+<span class="c">				* @attribute cookie_persist</span>
+<span class="c">				* @type Boolean</span>
+<span class="c">				* @default false</span>
+<span class="c">				*/</span>
+				<span class="k">this</span><span class="p">.</span><span class="nx">setAttributeConfig</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_PERSIST</span><span class="p">.</span><span class="nx">key</span><span class="o">,</span> <span class="p">{</span> <span class="nx">value</span><span class="o">:</span> <span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_PERSIST</span><span class="p">.</span><span class="nx">value</span><span class="o">,</span> <span class="nx">validator</span><span class="o">:</span> <span class="nx">Lang</span><span class="p">.</span><span class="nx">isBoolean</span> <span class="p">});</span>
+				
+				<span class="c">/**</span>
+<span class="c">				* Cookie name</span>
+<span class="c">				* @attribute cookie_name</span>
+<span class="c">				* @type String</span>
+<span class="c">				* @default ElementRotator</span>
+<span class="c">				*/</span>
+				<span class="k">this</span><span class="p">.</span><span class="nx">setAttributeConfig</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_NAME</span><span class="p">.</span><span class="nx">key</span><span class="o">,</span> <span class="p">{</span> <span class="nx">value</span><span class="o">:</span> <span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_NAME</span><span class="p">.</span><span class="nx">value</span><span class="o">,</span> <span class="nx">validator</span><span class="o">:</span> <span class="nx">Lang</span><span class="p">.</span><span class="nx">isString</span> <span class="p">});</span>
+				
+				<span class="c">/**</span>
+<span class="c">				* Cookie settings (domain, path, etc.)</span>
+<span class="c">				* @attribute cookie_settings</span>
+<span class="c">				* @type Object</span>
+<span class="c">				* @default { path: &#39;/&#39; }</span>
+<span class="c">				*/</span>
+				<span class="k">this</span><span class="p">.</span><span class="nx">setAttributeConfig</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_SETTINGS</span><span class="p">.</span><span class="nx">key</span><span class="o">,</span> <span class="p">{</span> <span class="nx">value</span><span class="o">:</span> <span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_SETTINGS</span><span class="p">.</span><span class="nx">value</span><span class="o">,</span> <span class="nx">validator</span><span class="o">:</span> <span class="nx">Lang</span><span class="p">.</span><span class="nx">isObject</span> <span class="p">});</span>
+				
+				<span class="k">this</span><span class="p">.</span><span class="nx">setAttributes</span><span class="p">(</span><span class="nx">cfg</span><span class="o">,</span> <span class="kc">true</span><span class="p">);</span>
+			<span class="p">}</span><span class="o">,</span>
+			
+			<span class="c">/**</span>
+<span class="c">			* Initializes current element index from cookie, if cookies are being used</span>
+<span class="c">			* @method _initCurrent</span>
+<span class="c">			* @private</span>
+<span class="c">			* @return {Number} Current element index</span>
+<span class="c">			*/</span>
+			<span class="nx">_initCurrent</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+				<span class="k">if</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_PERSIST</span><span class="p">.</span><span class="nx">key</span><span class="p">))</span> <span class="p">{</span>
+					<span class="kd">var</span> <span class="nx">name</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_NAME</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span><span class="o">,</span>
+						<span class="nx">current</span> <span class="o">=</span> <span class="nx">Cookie</span><span class="p">.</span><span class="nx">getSub</span><span class="p">(</span><span class="nx">name</span><span class="o">,</span> <span class="nx">_COOKIES</span><span class="p">.</span><span class="nx">CURRENT</span><span class="o">,</span> <span class="nb">Number</span><span class="p">);</span>
+					
+					<span class="k">if</span><span class="p">(</span><span class="nx">current</span><span class="p">)</span> <span class="p">{</span>
+						<span class="k">this</span><span class="p">.</span><span class="nx">_current</span> <span class="o">=</span> <span class="nx">current</span><span class="o">;</span>
+					<span class="p">}</span>
+				<span class="p">}</span>
+				
+				<span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_current</span><span class="o">;</span>
+			<span class="p">}</span><span class="o">,</span>
+			
+			<span class="c">/**</span>
+<span class="c">			* Increments current element index and updates cookie, if cookies are being used</span>
+<span class="c">			* @method _advanceCurrent</span>
+<span class="c">			* @private</span>
+<span class="c">			* @return {Number} New current element index</span>
+<span class="c">			*/</span>
+			<span class="nx">_advanceCurrent</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+				<span class="k">this</span><span class="p">.</span><span class="nx">_current</span> <span class="o">=</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_current</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="k">this</span><span class="p">.</span><span class="nx">_elements</span><span class="p">.</span><span class="nx">length</span><span class="o">;</span>
+				<span class="k">if</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_PERSIST</span><span class="p">.</span><span class="nx">key</span><span class="p">))</span> <span class="p">{</span>
+					<span class="nx">Cookie</span><span class="p">.</span><span class="nx">setSub</span><span class="p">(</span>
+						<span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_NAME</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span><span class="o">,</span>
+						<span class="nx">_COOKIES</span><span class="p">.</span><span class="nx">CURRENT</span><span class="o">,</span>
+						<span class="k">this</span><span class="p">.</span><span class="nx">_current</span><span class="o">,</span>
+						<span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">COOKIE_SETTINGS</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span>
+					<span class="p">);</span>
+				<span class="p">}</span>
+				
+				<span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_current</span><span class="o">;</span>
+			<span class="p">}</span><span class="o">,</span>
+			
+			<span class="c">/**</span>
+<span class="c">			* Schedules next element advancement</span>
+<span class="c">			* @method _schedule</span>
+<span class="c">			* @private</span>
+<span class="c">			*/</span>
+			<span class="nx">_schedule</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+				<span class="c">/*</span>
+<span class="c">					For syncing transitions with user&#39;s clock, we pick a fixed time t_0 in the past</span>
+<span class="c">					and interpret a show_duration of D to mean that transitions should be initiated</span>
+<span class="c">					every D seconds from t_0. If t denotes the current time, and S(t_0, t) the number</span>
+<span class="c">					of seconds since t_0, then the number of seconds since the last transition is</span>
+<span class="c">					is S(t_0, t) % D, so the time until the next transition is D - (S(t_0, t) % D).</span>
+<span class="c">					</span>
+<span class="c">					For convenience we work in milliseconds and let t_0 be the epoch, so S(t_0, t) is</span>
+<span class="c">					just given by getTime() applied to the current date and we use d = 1000 * D.</span>
+<span class="c">				*/</span>
+				<span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="o">,</span>
+					<span class="nx">d</span> <span class="o">=</span> <span class="mi">1000</span> <span class="o">*</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">SHOW_DURATION</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span><span class="o">,</span>
+					<span class="nx">t</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">CLOCK_SYNC</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="o">?</span> <span class="p">(</span><span class="nx">d</span> <span class="o">-</span> <span class="p">((</span><span class="k">new</span> <span class="nb">Date</span><span class="p">()).</span><span class="nx">getTime</span><span class="p">()</span> <span class="o">%</span> <span class="nx">d</span><span class="p">))</span> <span class="o">:</span> <span class="nx">d</span><span class="o">;</span>
+				
+				<span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="nx">self</span><span class="p">.</span><span class="nx">_advance</span><span class="p">();</span> <span class="p">}</span><span class="o">,</span> <span class="nx">t</span><span class="p">);</span>
+			<span class="p">}</span><span class="o">,</span>
+			
+			<span class="c">/**</span>
+<span class="c">			* Advances element</span>
+<span class="c">			* @method _advance</span>
+<span class="c">			* @private</span>
+<span class="c">			*/</span>
+			<span class="nx">_advance</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+				<span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="o">,</span>
+					<span class="nx">elements</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_elements</span><span class="o">,</span>
+					<span class="nx">total</span> <span class="o">=</span> <span class="nx">elements</span><span class="p">.</span><span class="nx">length</span><span class="o">,</span>
+					<span class="nx">idxCurrent</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_current</span><span class="o">,</span>
+					<span class="nx">idxNext</span> <span class="o">=</span> <span class="p">(</span><span class="nx">idxCurrent</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nx">total</span><span class="o">,</span>
+					<span class="nx">current</span> <span class="o">=</span> <span class="nx">elements</span><span class="p">[</span><span class="nx">idxCurrent</span><span class="p">]</span><span class="o">,</span>
+					<span class="nx">next</span> <span class="o">=</span> <span class="nx">elements</span><span class="p">[</span><span class="nx">idxNext</span><span class="p">]</span><span class="o">,</span>
+					<span class="nx">anim</span><span class="o">;</span>
+				
+				<span class="c">/* When constructing the animations, we assume only the current element has</span>
+<span class="c">					visibility and nonzero opacity. */</span>
+				<span class="k">if</span><span class="p">(</span><span class="nx">idxNext</span> <span class="o">!==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+					<span class="c">// Fade up to next element in stack</span>
+					<span class="nx">anim</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Anim</span><span class="p">(</span><span class="nx">next</span><span class="o">,</span> <span class="p">{</span> <span class="nx">opacity</span><span class="o">:</span> <span class="p">{</span> <span class="nx">to</span><span class="o">:</span> <span class="mi">1</span> <span class="p">}</span> <span class="p">}</span><span class="o">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">FADE_DURATION</span><span class="p">.</span><span class="nx">key</span><span class="p">));</span>
+					
+					<span class="nx">anim</span><span class="p">.</span><span class="nx">onComplete</span><span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span>
+						<span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+							<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">current</span><span class="o">,</span> <span class="s1">&#39;opacity&#39;</span><span class="o">,</span> <span class="mi">0</span><span class="p">);</span>
+							<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">current</span><span class="o">,</span> <span class="s1">&#39;visibility&#39;</span><span class="o">,</span> <span class="s1">&#39;hidden&#39;</span><span class="p">);</span>
+							<span class="nx">self</span><span class="p">.</span><span class="nx">_schedule</span><span class="p">();</span>
+						<span class="p">}</span>
+					<span class="p">);</span>
+					
+					<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">next</span><span class="o">,</span> <span class="s1">&#39;visibility&#39;</span><span class="o">,</span> <span class="s1">&#39;visible&#39;</span><span class="p">);</span>
+				<span class="p">}</span>
+				<span class="k">else</span> <span class="p">{</span>
+					<span class="c">// Fade back down to first element in stack</span>
+					<span class="nx">anim</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Anim</span><span class="p">(</span><span class="nx">current</span><span class="o">,</span> <span class="p">{</span> <span class="nx">opacity</span><span class="o">:</span> <span class="p">{</span> <span class="nx">to</span><span class="o">:</span> <span class="mi">0</span> <span class="p">}</span> <span class="p">}</span><span class="o">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">_CONFIG</span><span class="p">.</span><span class="nx">FADE_DURATION</span><span class="p">.</span><span class="nx">key</span><span class="p">));</span>
+					
+					<span class="nx">anim</span><span class="p">.</span><span class="nx">onComplete</span><span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span>
+						<span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+							<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">current</span><span class="o">,</span> <span class="s1">&#39;visibility&#39;</span><span class="o">,</span> <span class="s1">&#39;hidden&#39;</span><span class="p">);</span>
+							<span class="nx">self</span><span class="p">.</span><span class="nx">_schedule</span><span class="p">();</span>
+						<span class="p">}</span>
+					<span class="p">);</span>
+					
+					<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">next</span><span class="o">,</span> <span class="s1">&#39;visibility&#39;</span><span class="o">,</span> <span class="s1">&#39;visible&#39;</span><span class="p">);</span>
+					<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">next</span><span class="o">,</span> <span class="s1">&#39;opacity&#39;</span><span class="o">,</span> <span class="mi">1</span><span class="p">);</span>
+				<span class="p">}</span>
+				
+				<span class="k">this</span><span class="p">.</span><span class="nx">_advanceCurrent</span><span class="p">();</span>
+				<span class="nx">anim</span><span class="p">.</span><span class="nx">animate</span><span class="p">();</span>
+			<span class="p">}</span><span class="o">,</span>
+			
+			<span class="c">/**</span>
+<span class="c">			* Renders and starts element transitions</span>
+<span class="c">			* @method render</span>
+<span class="c">			*/</span>
+			<span class="nx">render</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+				<span class="kd">var</span> <span class="nx">el</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;element&#39;</span><span class="p">)</span><span class="o">,</span>
+					<span class="nx">nodes</span> <span class="o">=</span> <span class="nx">el</span><span class="p">.</span><span class="nx">childNodes</span><span class="o">,</span>
+					<span class="nx">len</span> <span class="o">=</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">length</span><span class="o">;</span>
+				
+				<span class="k">if</span><span class="p">(</span><span class="nx">len</span><span class="p">)</span> <span class="p">{</span>
+					<span class="kd">var</span> <span class="nx">pos</span> <span class="o">=</span> <span class="nx">Dom</span><span class="p">.</span><span class="nx">getStyle</span><span class="p">(</span><span class="nx">el</span><span class="o">,</span> <span class="s1">&#39;position&#39;</span><span class="p">)</span><span class="o">,</span>
+						<span class="nx">current</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_initCurrent</span><span class="p">()</span><span class="o">,</span>
+						<span class="nx">i</span><span class="o">,</span> <span class="nx">j</span><span class="o">,</span> <span class="nx">node</span><span class="o">;</span>
+					
+					<span class="c">// Ensure we can position elements relative to the container</span>
+					<span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">pos</span> <span class="o">||</span> <span class="nx">pos</span> <span class="o">===</span> <span class="s1">&#39;static&#39;</span><span class="p">)</span> <span class="p">{</span>
+						<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">el</span><span class="o">,</span> <span class="s1">&#39;position&#39;</span><span class="o">,</span> <span class="s1">&#39;relative&#39;</span><span class="p">);</span>
+					<span class="p">}</span>
+					
+					<span class="c">// Prepare elements</span>
+					<span class="k">this</span><span class="p">.</span><span class="nx">_elements</span> <span class="o">=</span> <span class="p">[];</span>
+					<span class="k">for</span><span class="p">(</span><span class="nx">i</span> <span class="o">=</span> <span class="nx">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">len</span><span class="o">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+						<span class="nx">node</span> <span class="o">=</span> <span class="nx">nodes</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
+						<span class="k">if</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">nodeType</span> <span class="o">===</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+							<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">node</span><span class="o">,</span> <span class="s1">&#39;position&#39;</span><span class="o">,</span> <span class="s1">&#39;absolute&#39;</span><span class="p">);</span>
+							<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">node</span><span class="o">,</span> <span class="s1">&#39;left&#39;</span><span class="o">,</span> <span class="mi">0</span><span class="p">);</span>
+							<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">node</span><span class="o">,</span> <span class="s1">&#39;top&#39;</span><span class="o">,</span> <span class="mi">0</span><span class="p">);</span>
+							<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">node</span><span class="o">,</span> <span class="s1">&#39;zIndex&#39;</span><span class="o">,</span> <span class="nx">j</span><span class="p">);</span>
+							<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">node</span><span class="o">,</span> <span class="s1">&#39;visibility&#39;</span><span class="o">,</span> <span class="nx">j</span> <span class="o">===</span> <span class="nx">current</span> <span class="o">?</span> <span class="s1">&#39;visible&#39;</span> <span class="o">:</span> <span class="s1">&#39;hidden&#39;</span><span class="p">);</span>
+							<span class="nx">Dom</span><span class="p">.</span><span class="nx">setStyle</span><span class="p">(</span><span class="nx">node</span><span class="o">,</span> <span class="s1">&#39;opacity&#39;</span><span class="o">,</span> <span class="nx">j</span><span class="o">++</span> <span class="o">===</span> <span class="nx">current</span> <span class="o">?</span> <span class="mi">1</span> <span class="o">:</span> <span class="mi">0</span><span class="p">);</span>
+							<span class="k">this</span><span class="p">.</span><span class="nx">_elements</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
+						<span class="p">}</span>
+					<span class="p">}</span>
+					
+					<span class="k">if</span><span class="p">(</span><span class="k">this</span> <span class="o">!==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+						<span class="c">// Begin scheduling transitions</span>
+						<span class="k">this</span><span class="p">.</span><span class="nx">_schedule</span><span class="p">();</span>
+					<span class="p">}</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">);</span>
+	
+	<span class="c">// Export</span>
+	<span class="nx">YAHOO</span><span class="p">.</span><span class="nx">namespace</span><span class="p">(</span><span class="s1">&#39;BLARGON.widget&#39;</span><span class="p">);</span>
+	<span class="nx">YAHOO</span><span class="p">.</span><span class="nx">BLARGON</span><span class="p">.</span><span class="nx">widget</span><span class="p">.</span><span class="nx">ElementRotator</span> <span class="o">=</span> <span class="nx">ElementRotator</span><span class="o">;</span>
+<span class="p">})();</span>
+</pre></div>
+                    </div>
+			</div>
+		</div>
+		<div class="yui-b">
+            <div class="nav">
+
+                    <div id="moduleList" class="module">
+                        <h4>Modules</h4>
+                        <ul class="content">
+                                <li class="selected"><a href="module_elementrotator.html" title="elementrotator">elementrotator</a></li>
+                        </ul>
+                    </div>
+
+                    <div id="classList" class="module">
+                        <h4>Classes</h4>
+                        <ul class="content">
+                                <li class=""><a href="YAHOO.BLARGON.widget.ElementRotator.html" title="YAHOO.BLARGON.widget.ElementRotator">YAHOO.BLARGON.widget.ElementRotator</a></li>
+                        </ul>
+                    </div>
+
+                    <div id="fileList" class="module">
+                        <h4>Files</h4>
+                        <ul class="content">        
+                                <li class="selected"><a href="elementrotator.js.html" title="elementrotator.js">elementrotator.js</a></li>
+                        </ul>
+                    </div>
+
+
+
+
+
+            </div>
+		</div>
+	</div>
+	<div id="ft">
+        <hr />
+        Copyright &copy; 2009 Yahoo! Inc. All rights reserved.
+	</div>
+</div>
+<script type="text/javascript">
+    ALL_YUI_PROPS = [{"url": "YAHOO.BLARGON.widget.ElementRotator.html#method__advance", "access": "private", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "method", "name": "_advance"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#method__advanceCurrent", "access": "private", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "method", "name": "_advanceCurrent"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_beforeClock_syncChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "beforeClock_syncChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_beforeCookie_nameChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "beforeCookie_nameChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_beforeCookie_persistChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "beforeCookie_persistChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_beforeCookie_settingsChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "beforeCookie_settingsChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_beforeFade_durationChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "beforeFade_durationChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_beforeShow_durationChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "beforeShow_durationChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#config_clock_sync", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "config", "name": "clock_sync"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_clock_syncChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "clock_syncChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#property__CONFIG_DEFAULTS", "access": "private", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "property", "name": "_CONFIG_DEFAULTS"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#config_cookie_name", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "config", "name": "cookie_name"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_cookie_nameChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "cookie_nameChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#config_cookie_persist", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "config", "name": "cookie_persist"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_cookie_persistChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "cookie_persistChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#property__COOKIES", "access": "private", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "property", "name": "_COOKIES"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#config_cookie_settings", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "config", "name": "cookie_settings"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_cookie_settingsChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "cookie_settingsChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#property__current", "access": "private", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "property", "name": "_current"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#property__elements", "access": "private", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "property", "name": "_elements"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#config_fade_duration", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "config", "name": "fade_duration"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_fade_durationChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "fade_durationChange"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#method_initAttributes", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "method", "name": "initAttributes"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#method__initCurrent", "access": "private", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "method", "name": "_initCurrent"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#method_render", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "method", "name": "render"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#method__schedule", "access": "private", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "method", "name": "_schedule"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#config_show_duration", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "config", "name": "show_duration"}, {"url": "YAHOO.BLARGON.widget.ElementRotator.html#event_show_durationChange", "access": "", "host": "YAHOO.BLARGON.widget.ElementRotator", "type": "event", "name": "show_durationChange"}];
+</script>
+</body>
+</html>
